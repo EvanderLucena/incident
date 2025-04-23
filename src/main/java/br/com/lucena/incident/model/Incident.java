@@ -12,8 +12,6 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
 public class Incident {
 
     @Id
@@ -25,6 +23,10 @@ public class Incident {
 
     @Column(nullable = false, length = 1000)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private IncidentStatus status = IncidentStatus.OPEN;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

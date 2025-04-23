@@ -1,28 +1,34 @@
 package br.com.lucena.incident.service;
 
-import br.com.lucena.incident.exception.ResourceNotFoundException;
-import br.com.lucena.incident.model.Incident;
-import br.com.lucena.incident.repository.IncidentRepository;
 import br.com.lucena.incident.dto.IncidentRequestDTO;
 import br.com.lucena.incident.dto.IncidentResponseDTO;
-import lombok.AllArgsConstructor;
+import br.com.lucena.incident.exception.ResourceNotFoundException;
+import br.com.lucena.incident.model.Incident;
+import br.com.lucena.incident.model.IncidentStatus;
+import br.com.lucena.incident.repository.IncidentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
 public class IncidentService {
 
-    private final IncidentRepository incidentRepository;
+    private IncidentRepository incidentRepository;
+
+    @Autowired
+    public IncidentService(IncidentRepository incidentRepository) {
+        this.incidentRepository = incidentRepository;
+    }
 
     public IncidentResponseDTO createIncident(IncidentRequestDTO requestDTO) {
         Incident incident = new Incident();
         incident.setName(requestDTO.getName());
         incident.setDescription(requestDTO.getDescription());
-        incident.setClosedAt(requestDTO.getClosedAt());
+        incident.setStatus(IncidentStatus.OPEN);
 
         return mapToDTO(incidentRepository.save(incident));
     }
@@ -50,7 +56,6 @@ public class IncidentService {
         
         incident.setName(requestDTO.getName());
         incident.setDescription(requestDTO.getDescription());
-        incident.setClosedAt(requestDTO.getClosedAt());
         
         return mapToDTO(incidentRepository.save(incident));
     }
@@ -58,6 +63,27 @@ public class IncidentService {
     public void deleteIncident(Long id) {
         Incident incident = findIncidentById(id);
         incidentRepository.delete(incident);
+    }
+    
+    public IncidentResponseDTO updateStatus(Long id, IncidentStatus newStatus) {
+        Incident incident = findIncidentById(id);
+        incident.setStatus(newStatus);
+        
+        // Se estiver mudando para CLOSED, atualizar a data de fechamento
+        if (newStatus == IncidentStatus.CLOSED) {
+            incident.setClosedAt(LocalDateTime.now());
+        } else if (incident.getClosedAt() != null) {
+            // Se estiver reabrindo um incidente fechado, limpar a data
+            incident.setClosedAt(null);
+        }
+        
+        return mapToDTO(incidentRepository.save(incident));
+    }
+    
+    public List<IncidentResponseDTO> findByStatus(IncidentStatus status) {
+        return incidentRepository.findByStatus(status).stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     private Incident findIncidentById(Long id) {
@@ -70,6 +96,7 @@ public class IncidentService {
                 incident.getIdIncident(),
                 incident.getName(),
                 incident.getDescription(),
+                incident.getStatus(),
                 incident.getCreatedAt(),
                 incident.getUpdatedAt(),
                 incident.getClosedAt()
