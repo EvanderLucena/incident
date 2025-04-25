@@ -1,4 +1,4 @@
-package com.example.incidentmanagement.service;
+package br.com.lucena.incident;
 
 import br.com.lucena.incident.dto.IncidentRequestDTO;
 import br.com.lucena.incident.dto.IncidentResponseDTO;
